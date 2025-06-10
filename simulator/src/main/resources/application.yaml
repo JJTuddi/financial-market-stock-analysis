@@ -1,0 +1,16 @@
+server:
+  port: 8081
+spring:
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+  output:
+    ansi:
+      enabled: ALWAYS
+  thymeleaf:
+    cache: false
+kafka:
+  stock:
+    bootstrapServers: ${KAFKA_STOCKS_BOOSTRAP_SERVERS:localhost:9092}
+    defaultTopic: ${KAFKA_STOCKS_DEFAULT_TOPIC:stocks}

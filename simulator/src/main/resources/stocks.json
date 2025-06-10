@@ -1,0 +1,62 @@
+[
+  {
+    "companyName": "Apple Inc.",
+    "stockName": "AAPL",
+    "image": "https://1000logos.net/wp-content/uploads/2017/02/Apple-Logosu.png"
+  },
+  {
+    "companyName": "Analog Devices, Inc.",
+    "stockName": "ADI",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Analog_Devices_Logo.svg/2560px-Analog_Devices_Logo.svg.png"
+  },
+  {
+    "companyName": "Advanced Micro Devices, Inc.",
+    "stockName": "AMD",
+    "image": "https://1000logos.net/wp-content/uploads/2020/05/AMD-Logo.png"
+  },
+  {
+    "companyName": "Amazon.com, Inc.",
+    "stockName": "AMZN",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/2560px-Amazon_logo.svg.png"
+  },
+  {
+    "companyName": "ASML Holding N.V.",
+    "stockName": "ASML",
+    "image": "https://upload.wikimedia.org/wikipedia/en/thumb/6/6c/ASML_Holding_N.V._logo.svg/1280px-ASML_Holding_N.V._logo.svg.png"
+  },
+  {
+    "companyName": "Cisco Systems, Inc.",
+    "stockName": "CSCO",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Cisco_logo_blue_2016.svg/640px-Cisco_logo_blue_2016.svg.png"
+  },
+  {
+    "companyName": "Microsoft Corporation",
+    "stockName": "MSFT",
+    "image": "https://logos-world.net/wp-content/uploads/2020/09/Microsoft-Logo.png"
+  },
+  {
+    "companyName": "Netflix, Inc.",
+    "stockName": "NFLX",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Netflix_2015_logo.svg/1280px-Netflix_2015_logo.svg.png"
+  },
+  {
+    "companyName": "NVIDIA Corporation",
+    "stockName": "NVDA",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/NVIDIA_logo.svg/1024px-NVIDIA_logo.svg.png"
+  },
+  {
+    "companyName": "Qualcomm Incorporated",
+    "stockName": "QCOM",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Qualcomm-Logo.svg/1200px-Qualcomm-Logo.svg.png"
+  },
+  {
+    "companyName": "Starbucks Corporation",
+    "stockName": "SBUX",
+    "image": "https://pngimg.com/d/starbucks_PNG7.png"
+  },
+  {
+    "companyName": "Texas Instruments Incorporated",
+    "stockName": "TXN",
+    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/TexasInstruments-Logo.svg/1200px-TexasInstruments-Logo.svg.png"
+  }
+]

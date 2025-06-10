@@ -1,0 +1,207 @@
+terraform {
+  required_providers {
+    docker = {
+      source = "kreuzwerker/docker"
+      version = "~> 3.0.1"
+    }
+  }
+}
+
+provider "docker" {
+
+}
+
+resource "docker_network" "kafka-ui-network" {
+  name = "kafka-ui-network"
+  ipam_config {
+    subnet = "19.25.0.0/24"
+  }
+}
+
+variable "kafka-ui-username" {
+  type = string
+  default = "tuddi"
+}
+
+variable "kafka-ui-password" {
+  type = string
+  default = "tuddi"
+}
+
+resource "docker_container" "kafka-ui" {
+  image = "provectuslabs/kafka-ui:latest"
+  name  = "kafka-ui"
+
+  ports {
+    internal = 8080
+    external = 8080
+  }
+
+  networks_advanced {
+    name = docker_network.kafka-ui-network.name
+  }
+
+  env = [
+    // First kafka
+    "KAFKA_CLUSTERS_0_NAME=first",
+    "KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=${docker_container.kafka.name}:29092",
+    "KAFKA_CLUSTERS_0_METRICS_PORT=9997",
+    "KAFKA_CLUSTERS_0_SCHEMAREGISTRY=http://${docker_container.schemaregistry.name}:8085",
+    "KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME=first",
+    "KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS=http://${docker_container.kafka-connect.name}:8083",
+    // other ui properties
+    "DYNAMIC_CONFIG_ENABLED=true",
+    "AUTH_TYPE=LOGIN_FORM",
+    "SPRING_SECURITY_USER_NAME=${var.kafka-ui-username}",
+    "SPRING_SECURITY_USER_PASSWORD=${var.kafka-ui-password}",
+  ]
+
+  depends_on = [
+    docker_container.kafka,
+    docker_container.schemaregistry,
+    docker_container.kafka-connect,
+  ]
+}
+
+resource "docker_container" "kafka" {
+  image = "confluentinc/cp-kafka:7.2.1"
+  name = "kafka"
+
+  ports {
+    internal = 9092
+    external = 9092
+  }
+
+  ports {
+    internal = 9997
+    external = 9997
+  }
+
+  env = [
+    "KAFKA_BROKER_ID=1",
+    "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP='CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'",
+    "KAFKA_ADVERTISED_LISTENERS='PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092'",
+    "KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1",
+    "KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0",
+    "KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1",
+    "KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1",
+    "KAFKA_JMX_PORT=9997",
+    "KAFKA_JMX_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=kafka -Dcom.sun.management.jmxremote.rmi.port=9997",
+    "KAFKA_PROCESS_ROLES='broker,controller'",
+    "KAFKA_NODE_ID=1",
+    "KAFKA_CONTROLLER_QUORUM_VOTERS='1@kafka:29093'",
+    "KAFKA_LISTENERS='PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092'",
+    "KAFKA_INTER_BROKER_LISTENER_NAME='PLAINTEXT'",
+    "KAFKA_CONTROLLER_LISTENER_NAMES='CONTROLLER'",
+    "KAFKA_LOG_DIRS='/tmp/kraft-combined-logs'"
+  ]
+
+  command = [
+    "bash", "-c",
+    "if [ ! -f /tmp/update_run.sh ]; then echo \"ERROR: Did you forget the update_run.sh file that came with this docker-compose.yml file?\" && exit 1 ; else /tmp/update_run.sh && /etc/confluent/docker/run ; fi"
+  ]
+
+  mounts {
+    source = "${path.cwd}/kafka/kafka-ui/scripts/update_run.sh"
+    target = "/tmp/update_run.sh"
+    type   = "bind"
+    read_only = true
+  }
+
+  networks_advanced {
+    name = docker_network.kafka-ui-network.name
+  }
+
+}
+
+resource "docker_container" "schemaregistry" {
+
+  image = "confluentinc/cp-schema-registry:7.2.1"
+  name  = "schemaregistry"
+
+  ports {
+    internal = 8085
+    external = 8085
+  }
+
+  env = [
+    "SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS=PLAINTEXT://${docker_container.kafka.name}:29092",
+    "SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL=PLAINTEXT",
+    "SCHEMA_REGISTRY_HOST_NAME=schemaregistry",
+    "SCHEMA_REGISTRY_LISTENERS=http://schemaregistry:8085",
+
+    "SCHEMA_REGISTRY_SCHEMA_REGISTRY_INTER_INSTANCE_PROTOCOL=\"http\"",
+    "SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL=INFO",
+    "SCHEMA_REGISTRY_KAFKASTORE_TOPIC=_schemas",
+  ]
+
+  depends_on = [
+    docker_container.kafka
+  ]
+
+  networks_advanced {
+    name = docker_network.kafka-ui-network.name
+  }
+}
+
+resource "docker_container" "kafka-connect" {
+  name = "kafka-connect"
+  image = "confluentinc/cp-kafka-connect:7.2.1"
+
+  ports {
+    internal = 8083
+  }
+
+  env = [
+    "CONNECT_BOOTSTRAP_SERVERS=${docker_container.kafka.name}:29092",
+    "CONNECT_GROUP_ID=compose-connect-group",
+    "CONNECT_CONFIG_STORAGE_TOPIC=_connect_configs",
+    "CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1",
+    "CONNECT_OFFSET_STORAGE_TOPIC=_connect_offset",
+    "CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1",
+    "CONNECT_STATUS_STORAGE_TOPIC=_connect_status",
+    "CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1",
+    "CONNECT_KEY_CONVERTER=org.apache.kafka.connect.storage.StringConverter",
+    "CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL=http://${docker_container.schemaregistry.name}:8085",
+    "CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.storage.StringConverter",
+    "CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL=http://${docker_container.schemaregistry.name}:8085",
+    "CONNECT_INTERNAL_KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter",
+    "CONNECT_INTERNAL_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter",
+    "CONNECT_REST_ADVERTISED_HOST_NAME=kafka-connect",
+    "CONNECT_PLUGIN_PATH=\"/usr/share/java,/usr/share/confluent-hub-components\""
+  ]
+
+  depends_on = [
+    docker_container.kafka,
+    docker_container.schemaregistry
+  ]
+
+  networks_advanced {
+    name = docker_network.kafka-ui-network.name
+  }
+}
+
+resource "docker_container" "kafka-init-topics" {
+  name = "kafka-init-topics"
+  image = "confluentinc/cp-kafka:7.2.1"
+
+  mounts {
+    source = "${path.cwd}/kafka/kafka-ui/data/message.json"
+    target = "/data/message.json"
+    type   = "bind"
+    read_only = true
+  }
+
+  command = [
+    "bash", "-c",
+    "echo Waiting for Kafka to be ready... && cub kafka-ready -b ${docker_container.kafka.name}:29092 1 30 && kafka-topics --create --topic stocks --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server ${docker_container.kafka.name}:29092 && kafka-topics --create --topic stocks --partitions 3 --replication-factor 1 --if-not-exists --bootstrap-server ${docker_container.kafka.name}:29092"
+  ]
+
+  depends_on = [
+    docker_container.kafka
+  ]
+
+  networks_advanced {
+    name = docker_network.kafka-ui-network.name
+  }
+}
