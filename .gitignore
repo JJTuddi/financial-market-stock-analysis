@@ -38,3 +38,7 @@ build/
 .DS_Store
 
 secrets.tfvars
+
+*tfstate*
+.terraform.lock.hcl
+.terraform.tfstate.lock 2.info
